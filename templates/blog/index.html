@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>ArcGIS JavaScript Tutorials: Create a Starter App</title>
+    <style>
+        html, body, #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.13/esri/css/main.css">
+    <script src="https://js.arcgis.com/4.13/"></script>
+
+    <script>
+    var pointGraphic = {};
+    pointGraphic.point = [];
+    pointGraphic.longitude = [];
+    pointGraphic.latitude = [];
+
+    const minLatitude=-90;
+    const maxLatitude=90;
+    const minLongitude=-180;
+    const maxLongitude=180;
+    const maxCoordinateDelta=20;
+
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/Graphic",
+            "esri/layers/GraphicsLayer"
+        ], function(Map, MapView, Graphic, GraphicsLayer) {
+
+                var map = new Map({
+                    basemap: "topo-vector"
+                });
+
+                var view = new MapView({
+                    container: "viewDiv",
+                    map: map,
+                    center: [-118.80500, 34.02700],
+                    zoom: 2
+                });
+                /*var routeTask = new RouteTask({
+                    url: "https://utility.arcgis.com/usrsvcs/appservices/Miraxez/rest/services/World/Route/NAServer/Route_World/solve"
+                });*/
+                var graphicsLayer = new GraphicsLayer();
+                map.add(graphicsLayer);
+
+                for (var i = 0; i < 30; i++) {
+                    if (i==0){
+                        pointGraphic.longitude[i]  = getRandomLongitude();
+                        pointGraphic.latitude[i]  = getRandomLatitude();
+                    }
+                    else {
+                        pointGraphic.longitude[i]  = getNextLongitude(pointGraphic.longitude[i-1], maxCoordinateDelta);
+                        pointGraphic.latitude[i]  = getNextLatitude(pointGraphic.latitude[i-1],maxCoordinateDelta);
+                        console.log(pointGraphic.latitude[i], pointGraphic.longitude[i])
+                    }
+                    var point = {
+                            type: "point",
+                            longitude: pointGraphic.longitude[i],
+                            latitude: pointGraphic.latitude[i]
+                       };
+
+                    var simpleMarkerSymbol = {
+                        type: "simple-marker",
+                        color: [0, 0, 0],
+                        size: 5,
+                        outline: {
+                        color: [255, 255, 255],
+                        width: 1
+                        }
+                    };
+
+                    pointGraphic.point[i] = new Graphic({
+                        geometry: point,
+                        symbol: simpleMarkerSymbol
+                    });
+
+                    if (i > 0) {
+                        var simpleLineSymbol = {
+                            type: "simple-line",
+                            color: [226, 119, 40], // orange
+                            width: 1
+                        };
+
+                        var polyline = {
+                                type: "polyline",
+                                paths: [
+                                    [pointGraphic.longitude[i-1], pointGraphic.latitude[i-1]],
+                                    [pointGraphic.longitude[i], pointGraphic.latitude[i]]
+                                ]
+                            };
+
+                        var polylineGraphic = new Graphic({
+                            geometry: polyline,
+                            symbol: simpleLineSymbol
+                        })
+
+                        
+                    }
+
+                    graphicsLayer.add(pointGraphic.point[i]);
+                    graphicsLayer.add(polylineGraphic);
+                }
+            });
+
+        function getRandomLatitude() {
+            return (getRandomFloat(minLatitude,maxLatitude));
+        }
+
+        function getRandomLongitude() {
+            return (getRandomFloat(minLongitude,maxLongitude));
+        }
+
+        function getRandomFloat(min, max) {
+            return (Math.random()* max-min + min);
+        }
+
+        /*function getCoordinateWithinSquare(startCoordinate, squareSide) {
+            return (Math.random()* 2 * squareSide - squareSide + startCoordinate);
+        }*/
+
+        function getNextLatitude(previousLatitude, maxDelta) {
+            let nextLatitude = getNextCoordinate(previousLatitude,maxDelta,minLatitude,maxLatitude);
+            return nextLatitude;
+        }
+
+        function getNextLongitude(previousLongitude, maxDelta) {
+            let nextLongitude = getNextCoordinate(previousLongitude, maxDelta, minLongitude, maxLongitude);
+            return nextLongitude;
+        }
+
+        function getChangedValue(previousValue, maxDelta) {
+            return (Math.random() * 2 * maxDelta - maxDelta + previousValue);
+        }
+
+        function getNextCoordinate(previousCoordinate, maxDelta, minCoordinateValue, maxCoordinateValue) {
+            let nextCoordinate = getChangedValue(previousCoordinate,maxDelta);
+            while ((nextCoordinate < minCoordinateValue) || (nextCoordinate > maxCoordinateValue)) {
+                nextCoordinate = getChangedValue(previousCoordinate,maxDelta);
+            }
+            return nextCoordinate;
+        }
+
+    </script>
+</head>
+<body>
+    <div id="viewDiv"></div>
+</body>
